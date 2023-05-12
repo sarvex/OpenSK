@@ -27,15 +27,14 @@ def make_corpus(corpus_dir, corpus_json):
   elif not os.path.isdir(corpus_dir):
     raise NotADirectoryError
 
-  if os.path.isfile(corpus_json) and \
-    os.path.splitext(corpus_json)[-1] == ".json":
-    with open(corpus_json, encoding="utf-8") as corpus_file:
-      corpus = json.load(corpus_file)
-  else:
+  if (not os.path.isfile(corpus_json)
+      or os.path.splitext(corpus_json)[-1] != ".json"):
     raise TypeError
 
+  with open(corpus_json, encoding="utf-8") as corpus_file:
+    corpus = json.load(corpus_file)
   for i, seed_file in enumerate(corpus):
-    seed_file_name = "seed_file_" + str(i)
+    seed_file_name = f"seed_file_{str(i)}"
     raw_hex = seed_file["hex"].decode("hex")
     with open(os.path.join(corpus_dir, seed_file_name), "wb") as f:
       f.write(raw_hex)

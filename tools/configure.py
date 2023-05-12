@@ -57,12 +57,14 @@ def info(msg):
 def get_opensk_devices(batch_mode):
   devices = []
   for dev in hid.CtapHidDevice.list_devices():
-    if (dev.descriptor.vid, dev.descriptor.pid) == OPENSK_VID_PID:
-      if dev.capabilities & hid.CAPABILITY.CBOR:
-        if batch_mode:
-          devices.append(ctap2.Ctap2(dev))
-        else:
-          return [ctap2.Ctap2(dev)]
+    if (
+        dev.descriptor.vid,
+        dev.descriptor.pid,
+    ) == OPENSK_VID_PID and dev.capabilities & hid.CAPABILITY.CBOR:
+      if batch_mode:
+        devices.append(ctap2.Ctap2(dev))
+      else:
+        return [ctap2.Ctap2(dev)]
   return devices
 
 

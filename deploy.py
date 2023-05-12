@@ -173,11 +173,12 @@ APP_HEAP_SIZE = 90000
 
 
 def get_supported_boards():
-  boards = []
-  for name, props in SUPPORTED_BOARDS.items():
-    if all((os.path.exists(os.path.join(props.path, "Cargo.toml")),
-            (props.app_ldscript and os.path.exists(props.app_ldscript)))):
-      boards.append(name)
+  boards = [
+      name for name, props in SUPPORTED_BOARDS.items() if all((
+          os.path.exists(os.path.join(props.path, "Cargo.toml")),
+          (props.app_ldscript and os.path.exists(props.app_ldscript)),
+      ))
+  ]
   return tuple(set(boards))
 
 
@@ -238,10 +239,7 @@ class RemoveConstAction(argparse.Action):
     items = getattr(namespace, self.dest, [])
     if items is None:
       items = []
-    if isinstance(items, list):
-      items = items[:]
-    else:
-      items = copy.copy(items)
+    items = items[:] if isinstance(items, list) else copy.copy(items)
     if self.const in items:
       items.remove(self.const)
     setattr(namespace, self.dest, items)
@@ -320,8 +318,8 @@ class OpenSKInstaller:
       # empty value.
       target_toolchain.append("")
     current_version = self.checked_command_output(["rustc", "--version"])
-    if not (target_toolchain[0] in current_version and
-            target_toolchain[1] in current_version):
+    if (target_toolchain[0] not in current_version
+        or target_toolchain[1] not in current_version):
       info(f"Updating rust toolchain to {'-'.join(target_toolchain)}")
       # Need to update
       rustup_install = ["rustup"]
@@ -620,8 +618,8 @@ class OpenSKInstaller:
     self.check_prerequisites()
     self.update_rustc_if_needed()
 
-    if not (self.args.tockos or self.args.application or
-            self.args.clear_storage):
+    if (not self.args.tockos and not self.args.application
+        and not self.args.clear_storage):
       info("Nothing to do.")
       return 0
 
@@ -688,13 +686,13 @@ class OpenSKInstaller:
             "button pressed while inserting...")
         info("Press [ENTER] when ready.")
         _ = input()
-        # Search for the DFU devices
-        serial_number = []
         # pylint: disable=g-import-not-at-top,import-outside-toplevel
         from nordicsemi.lister import device_lister
-        for device in device_lister.DeviceLister().enumerate():
-          if device.vendor_id == "1915" and device.product_id == "521F":
-            serial_number.append(device.serial_number)
+        serial_number = [
+            device.serial_number
+            for device in device_lister.DeviceLister().enumerate()
+            if device.vendor_id == "1915" and device.product_id == "521F"
+        ]
         if not serial_number:
           fatal("Couldn't find any DFU device on your system.")
         if len(serial_number) > 1:
